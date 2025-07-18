@@ -1,0 +1,28 @@
+{
+  "name": "interviewbotbackend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "karthik chary",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@headlessui/react": "^2.2.4",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "expess": "^0.0.1-security",
+    "express": "^5.1.0",
+    "express-fileupload": "^1.5.2",
+    "firebase-admin": "^13.4.0",
+    "mongoose": "^8.16.4",
+    "multer": "^2.0.1",
+    "nodemailer": "^7.0.5",
+    "nodemon": "^3.1.10",
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^3.1.6",
+    "pdfreader": "^3.0.7"
+  }
+}
