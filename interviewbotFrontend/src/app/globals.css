@@ -96,3 +96,138 @@ body {
     transform: scale3d(1, 1, 1);
   }
 }
+/* Styles for the Stop AI Speaking button */
+.stop-button-style {
+  display: inline-block;
+  width: 180px; /* Slightly increased width to fit "Stop AI Speaking" */
+  height: 50px;
+  border-radius: 10px;
+  border: 1px solid #03045e;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s ease-in;
+  z-index: 1;
+  background: none; /* Ensure no default background interferes */
+  cursor: pointer; /* Indicate it's clickable */
+  font-family: inherit; /* Inherit font from parent */
+  padding: 0; /* Remove default padding */
+}
+
+.stop-button-style::before,
+.stop-button-style::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 100%;
+  transform: skew(15deg);
+  transition: all 0.5s;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.stop-button-style::before {
+  left: -10px;
+  background: #240046;
+}
+
+.stop-button-style::after {
+  right: -10px;
+  background: #5a189a;
+}
+
+.stop-button-style:hover::before,
+.stop-button-style:hover::after {
+  width: 58%;
+}
+
+.stop-button-style:hover .stop-button-text { /* Target the span specifically */
+  color: #e0aaff;
+  transition: 0.3s;
+}
+
+.stop-button-text { /* Added a class for the span content */
+  color: #03045e;
+  font-size: 18px;
+  transition: all 0.3s ease-in;
+  display: flex; /* Allow content to center */
+  align-items: center; /* Vertically center */
+  justify-content: center; /* Horizontally center */
+  width: 100%;
+  height: 100%;
+  position: relative; /* Needed for z-index in button */
+  z-index: 2; /* Keep text above pseudo-elements */
+}
+
+
+/* --- Conversation Layout Styles --- */
+.conversation-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between messages */
+  padding-bottom: 100px; /* Space for microphone button */
+  max-height: calc(100vh - 200px); /* Adjust as needed */
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.message-bubble {
+  padding: 10px 15px;
+  border-radius: 20px;
+  max-width: 70%;
+  position: relative;
+  word-wrap: break-word; /* Ensure long words wrap */
+}
+
+.user-message {
+  align-self: flex-end; /* Align to the right */
+  background-color: #dcf8c6; /* Light green for user */
+  color: #333;
+  border-bottom-right-radius: 2px; /* Slight adjustment for bubble shape */
+}
+
+.assistant-message {
+  align-self: flex-start; /* Align to the left */
+  background-color: #e0e0e0; /* Light gray for assistant */
+  color: #333;
+  border-bottom-left-radius: 2px; /* Slight adjustment for bubble shape */
+}
+
+/* Typing indicator */
+.typing-indicator span {
+  display: inline-block;
+  animation: dot-blink 1.4s infinite ease-in-out both;
+  color: #666;
+  margin-left: 2px;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dot-blink {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+
+/* --- Microphone Button Positioning --- */
+.microphone-container {
+  position: fixed; /* Fixed position relative to viewport */
+  bottom: 20px; /* 20px from the bottom */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Adjust for its own width */
+  z-index: 1000; /* Ensure it's on top of other content */
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  align-items: center; /* Center horizontally */
+  gap: 10px; /* Space between mic and buttons */
+}
+
+.top-buttons-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%; /* Make this container span full width if needed */
+  align-items: center;
+  margin-bottom: 20px; /* Space below top buttons */
+}

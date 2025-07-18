@@ -14,7 +14,7 @@ import { PdfReader } from "pdfreader";
 import Resumefound from "./routers/startcalll.js";
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-import ollamaRoute from "./routers/ollamaRoute.js"
+import chatRouter from './routers/ollamaRoute.js'; // Adjust path as needed
 
 const app = express();
 app.use(fileUpload())
@@ -118,7 +118,7 @@ app.post("/api/upload-resume", async (req, res) => {
 });
 
  app.use('/api', Resumefound);
- app.use("/api", ollamaRoute); // Now route is: http://localhost:5000/api/chat-with-ollama
+app.use('/api', chatRouter);
 
 
  const PORT = 5000;

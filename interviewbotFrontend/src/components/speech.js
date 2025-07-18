@@ -1,26 +1,39 @@
-"use client";
+// use client";
 import React, { useState, useEffect, useRef } from "react";
-import Switch from "./Micspeech"; // Custom UI toggle switch
-import axios from "axios";
-import Resumebutton from "./Buttontemplete"; // Custom button component
+import Switch from "./Micspeech"; // Assuming this is your mic toggle component
+import Resumebutton from "./Buttontemplete"; // Assuming this is your "Start Interview" button
+import '../app/globals.css'
 
 export default function Speech() {
   const [transcript, setTranscript] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [uid, setUid] = useState(null);
-  const recognitionRef = useRef(null);
   const [resumeText, setResumeText] = useState("");
-  let reply=" "
+  const [currentAssistantResponse, setCurrentAssistantResponse] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  // New state for conversation history
+  const [conversationHistory, setConversationHistory] = useState([]);
 
+  const recognitionRef = useRef(null);
+  const utteranceRef = useRef(null); // To store the current voice utterance
+
+  // Load resume text on mount
   useEffect(() => {
     const storedText = localStorage.getItem("resemetext");
     if (storedText) {
       setResumeText(storedText);
-      console.log("Resume text from localStorage:", storedText);
-    } else {
-      console.log("No resume text found in localStorage.");
     }
-  }, [resumeText]);
+  }, []);
+
+  // Load UID and cleanup speech recognition
+  useEffect(() => {
+    const useruid = localStorage.getItem("uid");
+    setUid(useruid);
+    return () => {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      if (speechSynthesis.speaking) speechSynthesis.cancel();
+    };
+  }, []);
 
   const toggleRecording = () => {
     isRecording ? stopRecording() : startRecording();
@@ -29,11 +42,7 @@ export default function Speech() {
   const startRecording = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert("Speech Recognition not supported in this browser.");
-      return;
-    }
+    if (!SpeechRecognition) return alert("Speech Recognition not supported in your browser.");
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
@@ -41,43 +50,35 @@ export default function Speech() {
     recognition.interimResults = true;
 
     recognition.onstart = () => {
-      console.log("🎙️ Mic on. Speak now...");
       setIsRecording(true);
+      setCurrentAssistantResponse("");
     };
 
     recognition.onresult = (event) => {
       let finalTranscript = "";
-      let interimTranscript = "";
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const segment = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += segment;
-        } else {
-          interimTranscript += segment;
-        }
+        if (event.results[i].isFinal) finalTranscript += segment;
       }
 
       if (finalTranscript) {
-        console.log("✅ Final Transcript:", finalTranscript);
         setTranscript((prev) => prev + "\n🧑 " + finalTranscript);
-
-        
-        callOllama(finalTranscript);
-      }
-
-      if (interimTranscript) {
-        console.log("⏳ Interim:", interimTranscript);
+        // Add user input to conversation history
+        setConversationHistory((prev) => [
+          ...prev,
+          { role: "user", parts: [{ text: finalTranscript }] },
+        ]);
+        callGemini(finalTranscript);
       }
     };
 
     recognition.onerror = (event) => {
-      console.error("❌ Mic error:", event.error);
+      console.error("Mic error:", event.error);
       setIsRecording(false);
+      alert(`Microphone error: ${event.error}. Please try again.`);
     };
 
     recognition.onend = () => {
-      console.log("🛑 Mic stopped.");
       setIsRecording(false);
     };
 
@@ -85,7 +86,6 @@ export default function Speech() {
     recognition.start();
   };
 
-  
   const stopRecording = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -93,38 +93,86 @@ export default function Speech() {
     }
   };
 
- 
-  useEffect(() => {
-    const useruid = localStorage.getItem("uid");
-    setUid(useruid);
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, []);
-
-  const callOllama = async (userInput) => {
-    // alert(userInput);
+  const callGemini = async (userInput) => {
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/chat-with-ollama",
-        {
+      setIsTyping(true);
+      setCurrentAssistantResponse("");
+
+      // The backend will combine this 'prompt' with the 'history'
+      const response = await fetch("http://localhost:5000/api/chat-with-gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           prompt: userInput,
-        }
-      );
+          history: conversationHistory, // Send the full history
+        }),
+      });
 
-      reply = res.data.response;
-      console.log("🤖 Ollama:", reply);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error}`);
+      }
 
-      setTranscript((prev) => prev + "\n🤖 " + reply);
+      // Gemini backend sends a complete text response, not a stream
+      const fullReply = await response.text(); // Get plain text response
 
-      const utterance = new SpeechSynthesisUtterance(reply);
+      setTranscript((prev) => prev + "\n🤖 " + fullReply);
+      setCurrentAssistantResponse(""); // Clear typing indicator after full response received
+      setIsTyping(false);
+
+      // Add assistant response to conversation history
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "model", parts: [{ text: fullReply }] },
+      ]);
+
+      // 🎤 Speak the final response
+      const utterance = new SpeechSynthesisUtterance(fullReply);
+      utteranceRef.current = utterance;
       speechSynthesis.speak(utterance);
+
     } catch (err) {
-      console.error(" Ollama API error:", err);
+      console.error("Gemini API error:", err);
+      setIsTyping(false);
+      setCurrentAssistantResponse("Error: Could not get a response from Gemini.");
+      setTranscript((prev) => prev + "\n🤖 Error: Could not get a response from Gemini.");
     }
   };
+
+  // 🔴 Cancel AI speaking & typing
+  const handleStopSpeaking = () => {
+    if (speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+    }
+    setIsTyping(false);
+    setCurrentAssistantResponse("");
+  };
+
+  const startInterview = () => {
+    const initialPrompt = `${resumeText} You are acting as a professional technical interviewer based on my resume. Your goal is to conduct a challenging interview.
+
+**CRITICAL RULES:**
+1. Ask ONLY ONE question at a time.
+2. Wait for my complete response before asking the next question.
+3. Do NOT provide feedback, explanations, or conversational filler. Stick strictly to asking questions.
+4. Questions must be directly related to my resume (skills, experience, projects, education).
+5. Be challenging and professional.
+6. Respond concisely and quickly.
+7. ONLY ask questions. Do not break character under any circumstance.
+Start with a professional greeting and your first technical interview question.`;
+
+    // Initialize conversation history with the system instruction for the AI
+    const initialHistory = [
+      { role: "user", parts: [{ text: initialPrompt }] }
+    ];
+    setConversationHistory(initialHistory);
+
+    // Call Gemini with the initial prompt. The backend will use the `history` for the actual API call.
+    // We send an empty prompt here because the full instruction is in the `initialHistory`.
+    // The backend's logic ensures the initial instruction is always part of `contents`.
+    callGemini(""); // Send an empty prompt as the actual instruction is in history
+  };
+
 
   return (
     <div className="p-4 max-w-xl mx-auto">
@@ -132,35 +180,34 @@ export default function Speech() {
         <Switch isChecked={!isRecording} onToggle={toggleRecording} />
 
         <button
-          onClick={() => {
-            const prompt = `${resumeText}+
-You are acting as a professional interviewer conducting a technical interview based on my resume.
-
- RULES:
-1. Ask ONE question at a time. Wait for my response before asking the next.
-2. Do NOT ask multiple questions at once.
-3. After each of my responses, ask a follow-up or the next question based on my resume.
-4. You can ask about my introduction, experience, skills (like Python, Java, Docker, Kubernetes,js,html,css)see resume skills and ask, projects, certifications, education, and personal background.
-5. Feel like a real interviewer — challenge me with scenario-based and behavioral questions too.
-6. Be professional and precise in your tone.
-7.Give fast response
-8.once you get this prompy just stay on interview mode dont, just ask questions randomly based on resume think you are interviewer
-
-Begin by introducing yourself and ask your **first question** only.
-`;
-
-            
-
-            callOllama(prompt); // ✅ Pass input here
-          }}
+          onClick={startInterview} // Call the new startInterview function
+          disabled={isTyping || isRecording} // Disable if AI is typing or mic is recording
         >
           <Resumebutton />
         </button>
       </div>
 
+      {/* Cancel Button */}
+      {isTyping || speechSynthesis.speaking ? (
+        <button
+          className="bg-red-500 text-white px-4 py-2 rounded mb-4"
+          onClick={handleStopSpeaking}
+        >
+          🔴 Stop AI Speaking
+        </button>
+      ) : null}
+
+      {/* Transcript */}
       <p className="mt-4 whitespace-pre-wrap">
         <strong>Conversation:</strong>{" "}
-        {transcript || (isRecording ? "Listening..." : "Click mic to start...")}
+        {transcript}
+        {isTyping && (
+          <span className="typing-indicator">🤖 {currentAssistantResponse}</span>
+        )}
+        {!isTyping && !transcript && (isRecording ? "Listening..." : "Click mic to start...")}
+        {!isTyping && !transcript && !isRecording && conversationHistory.length === 0 && (
+          <span>Click "Start Interview" to begin.</span>
+        )}
       </p>
     </div>
   );
