@@ -1,23 +1,22 @@
 // firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCnl9v-y16EczozPoeApDb9P31sDHzmFnc",
-  authDomain: "interviewbot-b423e.firebaseapp.com",
-  projectId: "interviewbot-b423e",
-  storageBucket: "interviewbot-b423e.appspot.com",
-  messagingSenderId: "604930628500",
-  appId: "1:604930628500:web:34623b980d50af55cc0d81",
-  measurementId: "G-RLEY3G2S84"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
 
-// ✅ Export only if window is defined
 let analytics;
 if (typeof window !== "undefined") {
-  const { getAnalytics } = await import("firebase/analytics");
   analytics = getAnalytics(app);
 }
 

@@ -23,17 +23,21 @@ export async function sendOtpEmail(req, res) {
 
         const otp = generateOTP();
         console.log("Generated OTP:", otp);
+        const emailUser = process.env.EMAIL_USER;
+        const emailPass = process.env.EMAIL_PASS;
+        console.log(emailUser,emailPass)
 
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-                user: "hackerantharababu@gmail.com",
-                pass: "dfcv bbqd qucv shnq", 
+                user: emailUser,
+                pass: emailPass,
+ 
             },
         });
 
         const mailOptions = {
-            from: "hackerantharababu@gmail.com",
+            from: emailUser,
             to: email,
             subject: "Your OTP Code",
             text: `Your OTP code is: ${otp}`,

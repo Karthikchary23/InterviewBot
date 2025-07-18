@@ -6,14 +6,11 @@ import mongoose from "mongoose";
 import User from "./models/Userschema.js";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routers/Authentication.js"
-import multer from "multer";
 import fileUpload from "express-fileupload";
 import Resume from "./models/Resume.js";
-// import pdf from "pdf-parse"; 
 import { PdfReader } from "pdfreader";
 import Resumefound from "./routers/startcalll.js";
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+import 'dotenv/config';
 import chatRouter from './routers/ollamaRoute.js'; // Adjust path as needed
 
 const app = express();

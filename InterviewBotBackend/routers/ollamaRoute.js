@@ -2,14 +2,12 @@ import express from "express";
 import { Router } from "express";
 const router = Router();
 
-// IMPORTANT: NEVER hardcode API keys in production.
-// Use environment variables (e.g., process.env.GEMINI_API_KEY)
-// Make sure you have `dotenv` configured in your main app file (app.js/index.js)
-const GEMINI_API_KEY = "AIzaSyBL-hZkU7e0TmKevYJNPGlsGP-k-zyGtJU"; // Your provided key
 
-// --- Gemini Chat Endpoint ---
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
+console.log(GEMINI_API_KEY)
+
 router.post("/chat-with-gemini", async (req, res) => {
-  const { prompt, history } = req.body; // Receive the current prompt AND conversation history
+  const { prompt, history } = req.body; 
   console.log("Received prompt for Gemini:", prompt);
   console.log("Current conversation history length:", history.length);
 

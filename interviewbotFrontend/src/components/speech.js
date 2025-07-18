@@ -2,22 +2,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import Switch from "./Micspeech"; // Assuming this is your mic toggle component
 import Resumebutton from "./Buttontemplete"; // Assuming this is your "Start Interview" button
-import '../app/globals.css'
+import '../app/globals.css'; // Your global Tailwind CSS import
 
 export default function Speech() {
-  const [transcript, setTranscript] = useState("");
   const [isRecording, setIsRecording] = useState(false);
-  const [uid, setUid] = useState(null);
   const [resumeText, setResumeText] = useState("");
   const [currentAssistantResponse, setCurrentAssistantResponse] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  // New state for conversation history
+  // conversationHistory: Stores { role: 'user' | 'model', text: 'message' }
   const [conversationHistory, setConversationHistory] = useState([]);
 
   const recognitionRef = useRef(null);
   const utteranceRef = useRef(null); // To store the current voice utterance
+  const conversationEndRef = useRef(null); // Ref for scrolling to the bottom of the chat
 
-  // Load resume text on mount
   useEffect(() => {
     const storedText = localStorage.getItem("resemetext");
     if (storedText) {
@@ -25,15 +23,19 @@ export default function Speech() {
     }
   }, []);
 
-  // Load UID and cleanup speech recognition
   useEffect(() => {
-    const useruid = localStorage.getItem("uid");
-    setUid(useruid);
+   
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
       if (speechSynthesis.speaking) speechSynthesis.cancel();
     };
   }, []);
+
+  useEffect(() => {
+    if (conversationEndRef.current) {
+      conversationEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversationHistory, currentAssistantResponse]);
 
   const toggleRecording = () => {
     isRecording ? stopRecording() : startRecording();
@@ -47,28 +49,27 @@ export default function Speech() {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.lang = "en-US";
-    recognition.interimResults = true;
+    recognition.interimResults = true; 
 
     recognition.onstart = () => {
       setIsRecording(true);
-      setCurrentAssistantResponse("");
+      setCurrentAssistantResponse(""); 
     };
 
     recognition.onresult = (event) => {
       let finalTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const segment = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscript += segment;
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
       }
 
-      if (finalTranscript) {
-        setTranscript((prev) => prev + "\n🧑 " + finalTranscript);
-        // Add user input to conversation history
+      if (finalTranscript.trim()) { 
         setConversationHistory((prev) => [
           ...prev,
-          { role: "user", parts: [{ text: finalTranscript }] },
+          { role: "user", text: finalTranscript.trim() },
         ]);
-        callGemini(finalTranscript);
+        callGemini(finalTranscript.trim());
       }
     };
 
@@ -94,17 +95,22 @@ export default function Speech() {
   };
 
   const callGemini = async (userInput) => {
+    // alert(userInput)
     try {
       setIsTyping(true);
-      setCurrentAssistantResponse("");
+      setCurrentAssistantResponse(""); 
 
-      // The backend will combine this 'prompt' with the 'history'
+      const apiHistory = conversationHistory.map(item => ({
+        role: item.role,
+        parts: [{ text: item.text }]
+      }));
+
       const response = await fetch("http://localhost:5000/api/chat-with-gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: userInput,
-          history: conversationHistory, // Send the full history
+          history: apiHistory, 
         }),
       });
 
@@ -113,18 +119,14 @@ export default function Speech() {
         throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error}`);
       }
 
-      // Gemini backend sends a complete text response, not a stream
-      const fullReply = await response.text(); // Get plain text response
+      const fullReply = await response.text();
 
-      setTranscript((prev) => prev + "\n🤖 " + fullReply);
-      setCurrentAssistantResponse(""); // Clear typing indicator after full response received
-      setIsTyping(false);
-
-      // Add assistant response to conversation history
       setConversationHistory((prev) => [
         ...prev,
-        { role: "model", parts: [{ text: fullReply }] },
+        { role: "model", text: fullReply.trim() },
       ]);
+      setCurrentAssistantResponse(""); 
+      setIsTyping(false); 
 
       // 🎤 Speak the final response
       const utterance = new SpeechSynthesisUtterance(fullReply);
@@ -135,7 +137,10 @@ export default function Speech() {
       console.error("Gemini API error:", err);
       setIsTyping(false);
       setCurrentAssistantResponse("Error: Could not get a response from Gemini.");
-      setTranscript((prev) => prev + "\n🤖 Error: Could not get a response from Gemini.");
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "model", text: "Error: Could not get a response from Gemini." },
+      ]);
     }
   };
 
@@ -148,8 +153,7 @@ export default function Speech() {
     setCurrentAssistantResponse("");
   };
 
-  const startInterview = () => {
-    const initialPrompt = `${resumeText} You are acting as a professional technical interviewer based on my resume. Your goal is to conduct a challenging interview.
+  const initialInstruction = `${resumeText} You are acting as a professional technical interviewer based on my resume. Your goal is to conduct a challenging interview.
 
 **CRITICAL RULES:**
 1. Ask ONLY ONE question at a time.
@@ -161,54 +165,84 @@ export default function Speech() {
 7. ONLY ask questions. Do not break character under any circumstance.
 Start with a professional greeting and your first technical interview question.`;
 
-    // Initialize conversation history with the system instruction for the AI
-    const initialHistory = [
-      { role: "user", parts: [{ text: initialPrompt }] }
-    ];
-    setConversationHistory(initialHistory);
+  const startInterview = () => {
+    setConversationHistory([
+      { role: "user", text: initialInstruction } // System instruction for AI
+    ]);
 
-    // Call Gemini with the initial prompt. The backend will use the `history` for the actual API call.
-    // We send an empty prompt here because the full instruction is in the `initialHistory`.
-    // The backend's logic ensures the initial instruction is always part of `contents`.
-    callGemini(""); // Send an empty prompt as the actual instruction is in history
+    callGemini(initialInstruction);
   };
 
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <Switch isChecked={!isRecording} onToggle={toggleRecording} />
+    <div className="flex flex-col min-h-screen relative bg-gray-50">
+      <div className="flex justify-between items-center p-4 w-full min-w-xl mx-auto box-border z-10">
+        <button onClick={startInterview}>
+          <Resumebutton  disabled={isTyping || isRecording} />
 
-        <button
-          onClick={startInterview} // Call the new startInterview function
-          disabled={isTyping || isRecording} // Disable if AI is typing or mic is recording
-        >
-          <Resumebutton />
         </button>
+        
+
+        {isTyping || speechSynthesis.speaking ? (
+          <button
+            className="uiverse-stop-button inline-block w-[180px] h-[50px] rounded-lg border border-[#03045e] relative overflow-hidden transition-all duration-500 ease-in z-10 bg-transparent cursor-pointer p-0 shadow-md"
+            onClick={handleStopSpeaking}
+          >
+            <span className="stop-button-text text-[#03045e] text-lg transition-all duration-300 ease-in flex items-center justify-center w-full h-full relative z-20">
+              🔴 Stop AI Speaking
+            </span>
+          </button>
+        ) : null}
       </div>
 
-      {/* Cancel Button */}
-      {isTyping || speechSynthesis.speaking ? (
-        <button
-          className="bg-red-500 text-white px-4 py-2 rounded mb-4"
-          onClick={handleStopSpeaking}
-        >
-          🔴 Stop AI Speaking
-        </button>
-      ) : null}
+      <div className="flex-grow flex flex-col gap-2.5 p-4 pb-[100px] overflow-y-auto scroll-smooth max-w-xl mx-auto box-border w-full">
+        {conversationHistory.length === 0 && !isRecording && !isTyping && (
+          <p className="text-center text-gray-500 mt-8">Click "Start Interview" to begin.</p>
+        )}
 
-      {/* Transcript */}
-      <p className="mt-4 whitespace-pre-wrap">
-        <strong>Conversation:</strong>{" "}
-        {transcript}
-        {isTyping && (
-          <span className="typing-indicator">🤖 {currentAssistantResponse}</span>
+        {conversationHistory.map((msg, index) => (
+          msg.text === initialInstruction ? null : (
+            <div
+              key={index}
+              className={`message-bubble py-2.5 px-3.5 rounded-3xl max-w-[75%] break-words leading-normal text-base shadow-sm
+                ${msg.role === "user" ? "user-message self-end bg-[#dcf8c6] text-[#333] rounded-br-sm ml-auto" : "assistant-message self-start bg-[#e0e0e0] text-[#333] rounded-bl-sm mr-auto"}`}
+            >
+              {msg.role === "user" ? "🧑 " : "🤖 "}
+              {msg.text}
+            </div>
+          )
+        ))}
+
+        {isTyping && currentAssistantResponse && (
+          <div className="message-bubble assistant-message flex items-center bg-[#e0e0e0] text-[#333] self-start rounded-bl-sm mr-auto py-2.5 px-3.5 rounded-3xl max-w-[75%] break-words leading-normal text-base shadow-sm">
+            🤖 {currentAssistantResponse}
+            <span className="typing-indicator flex items-center ml-1">
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink">.</span>
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.2s' }}>.</span>
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.4s' }}>.</span>
+            </span>
+          </div>
         )}
-        {!isTyping && !transcript && (isRecording ? "Listening..." : "Click mic to start...")}
-        {!isTyping && !transcript && !isRecording && conversationHistory.length === 0 && (
-          <span>Click "Start Interview" to begin.</span>
+        {isRecording && !isTyping && (
+          <div className="message-bubble user-message flex items-center bg-[#dcf8c6] text-[#333] self-end rounded-br-sm ml-auto py-2.5 px-3.5 rounded-3xl max-w-[75%] break-words leading-normal text-base shadow-sm">
+            🧑 Listening
+            <span className="typing-indicator flex items-center ml-1">
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink">.</span>
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.2s' }}>.</span>
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.4s' }}>.</span>
+            </span>
+          </div>
         )}
-      </p>
+
+        <div ref={conversationEndRef} /> 
+      </div>
+
+      <div className="microphone-container fixed bottom-5 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-2 p-2.5 bg-white rounded-3xl shadow-[0_4px_15px_rgba(0,0,0,0.15)]">
+        <Switch isChecked={isRecording} onToggle={toggleRecording} />
+        <p className="mic-status-text text-sm text-[#555]">
+          {isRecording ? "Recording..." : "Tap to speak"}
+        </p>
+      </div>
     </div>
   );
 }

@@ -13,6 +13,7 @@
     "@headlessui/react": "^2.2.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
     "expess": "^0.0.1-security",
     "express": "^5.1.0",
     "express-fileupload": "^1.5.2",
