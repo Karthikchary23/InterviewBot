@@ -16,7 +16,7 @@ import chatRouter from './routers/ollamaRoute.js'; // Adjust path as needed
 const app = express();
 app.use(fileUpload())
 app.use(cors({
-  origin: "*", 
+  origin: "https://interviewxpertai.vercel.app", 
   credentials: true               
 }));
 app.use(bodyParser.json());
