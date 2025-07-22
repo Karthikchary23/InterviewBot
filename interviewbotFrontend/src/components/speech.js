@@ -26,7 +26,9 @@ export default function Speech() {
   useEffect(() => {
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (speechSynthesis.speaking) speechSynthesis.cancel();
+      if (typeof window !== "undefined" && window.speechSynthesis?.speaking) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 

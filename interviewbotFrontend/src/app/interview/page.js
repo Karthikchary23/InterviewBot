@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { useUser } from "../../context/context/UserContext";
 import Image from "next/image";
-import Speech from "../../components/speech" ;
+import dynamic from "next/dynamic";
+const Speech = dynamic(() => import("../../components/speech"), { ssr: false });
 
 export default function InterviewPage() {
   const { uid } = useUser(); // Get uid from context
