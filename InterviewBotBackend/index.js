@@ -16,7 +16,7 @@ import chatRouter from './routers/ollamaRoute.js'; // Adjust path as needed
 const app = express();
 app.use(fileUpload())
 app.use(cors({
-  origin: "http://localhost:3000", 
+  origin: "https://interview-bot-steel.vercel.app/login", 
   credentials: true               
 }));
 app.use(bodyParser.json());
