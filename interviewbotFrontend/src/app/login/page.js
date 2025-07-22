@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Cookies from "js-cookie";
+import Image from "next/image";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -86,7 +87,7 @@ export default function Login() {
             onClick={handleGoogleLogin}
             className="flex items-center justify-center w-full mb-6 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition"
           >
-            <img
+            <Image
               src="https://www.svgrepo.com/show/475656/google-color.svg"
               alt="Google"
               className="w-6 h-6 mr-3"
