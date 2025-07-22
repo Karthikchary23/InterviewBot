@@ -31,7 +31,7 @@ const Signup = () => {
       const decoded = jwtDecode(token); // ✅ correct usage
       console.log("Decoded token signup:", decoded);
 
-      const data=axios.post("https://interviewbot-1n5j.onrender.com/api/signup", {
+      const data=axios.post("http://localhost:5000/api/signup", {
         email: decoded.email,
         uid:decoded.user_id,
         name: decoded.name,
@@ -65,7 +65,7 @@ const Signup = () => {
  const decoded = jwtDecode(token); // ✅ correct usage
       console.log("Decoded token signup:", decoded);
 
-      const data=axios.post("https://interviewbot-1n5j.onrender.com/api/signup", {
+      const data=axios.post("http://localhost:5000/api/signup", {
         email: decoded.email,
         uid:decoded.user_id,
         name: decoded.name,
@@ -93,7 +93,7 @@ const Signup = () => {
   }
 
   try {
-    const response = await axios.post("https://interviewbot-1n5j.onrender.com/api/send-otp", { email });
+    const response = await axios.post("http://localhost:5000/api/send-otp", { email });
 
     if (response.data.success) {
       setOtpSent(true);
@@ -170,10 +170,12 @@ const Signup = () => {
             className="flex items-center justify-center w-full mb-6 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition"
           >
             <Image
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google"
-              className="w-6 h-6 mr-3"
-            />
+  src="https://www.svgrepo.com/show/475656/google-color.svg"
+  alt="Google"
+  width={24}     // width in pixels
+  height={24}    // height in pixels
+  className="mr-3"
+/>
             <span className="text-gray-700 font-medium">
               Sign up with Google
             </span>

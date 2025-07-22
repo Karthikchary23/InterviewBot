@@ -29,7 +29,7 @@ const Navbar = () => {
 
       try {
         const res = await axios.get(
-          "https://interviewbot-1n5j.onrender.com/api/userdata/userdetails",
+          "http://localhost:5000/api/userdata/userdetails",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -59,7 +59,7 @@ useEffect(() => {
     {
       console.log("User ID for start call:", user?.uid);
       const response = await axios.get(
-        "https://interviewbot-1n5j.onrender.com/api/startcall",
+        "http://localhost:5000/api/startcall",
         {
           params: { userId: user.uid },
           
@@ -101,7 +101,7 @@ useEffect(() => {
     try {
       console.log("User ID:", user.uid);
       const response = await axios.post(
-        "https://interviewbot-1n5j.onrender.com/api/upload-resume",
+        "http://localhost:5000/api/upload-resume",
         formData,
         {
           headers: {

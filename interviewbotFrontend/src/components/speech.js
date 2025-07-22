@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Switch from "./Micspeech"; // Assuming this is your mic toggle component
 import Resumebutton from "./Buttontemplete"; // Assuming this is your "Start Interview" button
-import '../app/globals.css'; // Your global Tailwind CSS import
+import "../app/globals.css"; // Your global Tailwind CSS import
 
 export default function Speech() {
   const [isRecording, setIsRecording] = useState(false);
@@ -24,7 +24,6 @@ export default function Speech() {
   }, []);
 
   useEffect(() => {
-   
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
       if (speechSynthesis.speaking) speechSynthesis.cancel();
@@ -44,16 +43,17 @@ export default function Speech() {
   const startRecording = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Speech Recognition not supported in your browser.");
+    if (!SpeechRecognition)
+      return alert("Speech Recognition not supported in your browser.");
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.lang = "en-US";
-    recognition.interimResults = true; 
+    recognition.interimResults = true;
 
     recognition.onstart = () => {
       setIsRecording(true);
-      setCurrentAssistantResponse(""); 
+      setCurrentAssistantResponse("");
     };
 
     recognition.onresult = (event) => {
@@ -64,7 +64,7 @@ export default function Speech() {
         }
       }
 
-      if (finalTranscript.trim()) { 
+      if (finalTranscript.trim()) {
         setConversationHistory((prev) => [
           ...prev,
           { role: "user", text: finalTranscript.trim() },
@@ -98,25 +98,30 @@ export default function Speech() {
     // alert(userInput)
     try {
       setIsTyping(true);
-      setCurrentAssistantResponse(""); 
+      setCurrentAssistantResponse("");
 
-      const apiHistory = conversationHistory.map(item => ({
+      const apiHistory = conversationHistory.map((item) => ({
         role: item.role,
-        parts: [{ text: item.text }]
+        parts: [{ text: item.text }],
       }));
 
-      const response = await fetch("https://interviewbot-1n5j.onrender.com/api/chat-with-gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: userInput,
-          history: apiHistory, 
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/chat-with-gemini",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: userInput,
+            history: apiHistory,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorData.error}`);
+        throw new Error(
+          `HTTP error! Status: ${response.status}, Message: ${errorData.error}`
+        );
       }
 
       const fullReply = await response.text();
@@ -125,18 +130,19 @@ export default function Speech() {
         ...prev,
         { role: "model", text: fullReply.trim() },
       ]);
-      setCurrentAssistantResponse(""); 
-      setIsTyping(false); 
+      setCurrentAssistantResponse("");
+      setIsTyping(false);
 
       // 🎤 Speak the final response
       const utterance = new SpeechSynthesisUtterance(fullReply);
       utteranceRef.current = utterance;
       speechSynthesis.speak(utterance);
-
     } catch (err) {
       console.error("Gemini API error:", err);
       setIsTyping(false);
-      setCurrentAssistantResponse("Error: Could not get a response from Gemini.");
+      setCurrentAssistantResponse(
+        "Error: Could not get a response from Gemini."
+      );
       setConversationHistory((prev) => [
         ...prev,
         { role: "model", text: "Error: Could not get a response from Gemini." },
@@ -167,21 +173,19 @@ Start with a professional greeting and your first technical interview question.`
 
   const startInterview = () => {
     setConversationHistory([
-      { role: "user", text: initialInstruction } // System instruction for AI
+      { role: "user", text: initialInstruction }, // System instruction for AI
     ]);
 
     callGemini(initialInstruction);
   };
 
-
   return (
     <div className="flex flex-col min-h-screen relative bg-gray-50">
       <div className="flex justify-between items-center p-4 w-full min-w-xl mx-auto box-border z-10">
-        
-<Resumebutton onClick={startInterview} disabled={isTyping || isRecording} />
-
-       
-        
+        <Resumebutton
+          onClick={startInterview}
+          disabled={isTyping || isRecording}
+        />
 
         {isTyping || speechSynthesis.speaking ? (
           <button
@@ -197,29 +201,47 @@ Start with a professional greeting and your first technical interview question.`
 
       <div className="flex-grow flex flex-col gap-2.5 p-4 pb-[100px] overflow-y-auto scroll-smooth max-w-xl mx-auto box-border w-full">
         {conversationHistory.length === 0 && !isRecording && !isTyping && (
-          <p className="text-center text-gray-500 mt-8">Click "Start Interview" to begin.</p>
+          <p className="text-center text-gray-500 mt-8">
+            Click &quot;Start Interview&quot; to begin.
+          </p>
         )}
 
-        {conversationHistory.map((msg, index) => (
+        {conversationHistory.map((msg, index) =>
           msg.text === initialInstruction ? null : (
             <div
               key={index}
               className={`message-bubble py-2.5 px-3.5 rounded-3xl max-w-[75%] break-words leading-normal text-base shadow-sm
-                ${msg.role === "user" ? "user-message self-end bg-[#dcf8c6] text-[#333] rounded-br-sm ml-auto" : "assistant-message self-start bg-[#e0e0e0] text-[#333] rounded-bl-sm mr-auto"}`}
+                ${
+                  msg.role === "user"
+                    ? "user-message self-end bg-[#dcf8c6] text-[#333] rounded-br-sm ml-auto"
+                    : "assistant-message self-start bg-[#e0e0e0] text-[#333] rounded-bl-sm mr-auto"
+                }`}
             >
               {msg.role === "user" ? "🧑 " : "🤖 "}
               {msg.text}
             </div>
           )
-        ))}
+        )}
 
         {isTyping && currentAssistantResponse && (
           <div className="message-bubble assistant-message flex items-center bg-[#e0e0e0] text-[#333] self-start rounded-bl-sm mr-auto py-2.5 px-3.5 rounded-3xl max-w-[75%] break-words leading-normal text-base shadow-sm">
             🤖 {currentAssistantResponse}
             <span className="typing-indicator flex items-center ml-1">
-              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink">.</span>
-              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.2s' }}>.</span>
-              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.4s' }}>.</span>
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink">
+                .
+              </span>
+              <span
+                className="font-bold text-[#666] ml-0.5 animate-dot-blink"
+                style={{ animationDelay: "0.2s" }}
+              >
+                .
+              </span>
+              <span
+                className="font-bold text-[#666] ml-0.5 animate-dot-blink"
+                style={{ animationDelay: "0.4s" }}
+              >
+                .
+              </span>
             </span>
           </div>
         )}
@@ -227,14 +249,26 @@ Start with a professional greeting and your first technical interview question.`
           <div className="message-bubble user-message flex items-center bg-[#dcf8c6] text-[#333] self-end rounded-br-sm ml-auto py-2.5 px-3.5 rounded-3xl max-w-[75%] break-words leading-normal text-base shadow-sm">
             🧑 Listening
             <span className="typing-indicator flex items-center ml-1">
-              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink">.</span>
-              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.2s' }}>.</span>
-              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink" style={{ animationDelay: '0.4s' }}>.</span>
+              <span className="font-bold text-[#666] ml-0.5 animate-dot-blink">
+                .
+              </span>
+              <span
+                className="font-bold text-[#666] ml-0.5 animate-dot-blink"
+                style={{ animationDelay: "0.2s" }}
+              >
+                .
+              </span>
+              <span
+                className="font-bold text-[#666] ml-0.5 animate-dot-blink"
+                style={{ animationDelay: "0.4s" }}
+              >
+                .
+              </span>
             </span>
           </div>
         )}
 
-        <div ref={conversationEndRef} /> 
+        <div ref={conversationEndRef} />
       </div>
 
       <div className="microphone-container fixed bottom-5 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-2 p-2.5 bg-white rounded-3xl shadow-[0_4px_15px_rgba(0,0,0,0.15)]">
