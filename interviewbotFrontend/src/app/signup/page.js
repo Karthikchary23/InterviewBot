@@ -30,7 +30,7 @@ const Signup = () => {
       const decoded = jwtDecode(token); // ✅ correct usage
       console.log("Decoded token signup:", decoded);
 
-      const data=axios.post("http://localhost:5000/api/signup", {
+      const data=axios.post("https://interviewbot-1n5j.onrender.com/api/signup", {
         email: decoded.email,
         uid:decoded.user_id,
         name: decoded.name,
@@ -64,7 +64,7 @@ const Signup = () => {
  const decoded = jwtDecode(token); // ✅ correct usage
       console.log("Decoded token signup:", decoded);
 
-      const data=axios.post("http://localhost:5000/api/signup", {
+      const data=axios.post("https://interviewbot-1n5j.onrender.com/api/signup", {
         email: decoded.email,
         uid:decoded.user_id,
         name: decoded.name,
@@ -92,7 +92,7 @@ const Signup = () => {
   }
 
   try {
-    const response = await axios.post("http://localhost:5000/api/send-otp", { email });
+    const response = await axios.post("https://interviewbot-1n5j.onrender.com/api/send-otp", { email });
 
     if (response.data.success) {
       setOtpSent(true);

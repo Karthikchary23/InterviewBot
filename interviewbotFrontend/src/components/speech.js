@@ -105,7 +105,7 @@ export default function Speech() {
         parts: [{ text: item.text }]
       }));
 
-      const response = await fetch("http://localhost:5000/api/chat-with-gemini", {
+      const response = await fetch("https://interviewbot-1n5j.onrender.com/api/chat-with-gemini", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

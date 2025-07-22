@@ -23,7 +23,7 @@ app.use(bodyParser.json());
 app.use(express.json());
 app.use(cookieParser());
 
-const MONGO_URI = "mongodb://localhost:27017/interviewbot";
+const MONGO_URI = process.env.MONGO_URL;
 
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
