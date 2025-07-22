@@ -22,5 +22,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/dashboard', '/profile'], // add protected routes here
+  matcher: ['/', '/login', '/dashboard', '/profile','/interview'], // add protected routes here
 };
