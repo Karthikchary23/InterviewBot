@@ -177,10 +177,10 @@ Start with a professional greeting and your first technical interview question.`
   return (
     <div className="flex flex-col min-h-screen relative bg-gray-50">
       <div className="flex justify-between items-center p-4 w-full min-w-xl mx-auto box-border z-10">
-        <button onClick={startInterview}>
-          <Resumebutton  disabled={isTyping || isRecording} />
+        
+<Resumebutton onClick={startInterview} disabled={isTyping || isRecording} />
 
-        </button>
+       
         
 
         {isTyping || speechSynthesis.speaking ? (
