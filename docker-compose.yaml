@@ -1,0 +1,23 @@
+version: "1.5"
+
+services:
+    backendd:
+        build:
+            context: ./InterviewBotBackend
+            dockerfile: Dockerfile
+        working_dir: /InterviewBot
+        ports:
+            - "5000:5000"
+    frontendd:
+        build:
+            context:  ./interviewbotFrontend
+            dockerfile: Dockerfile
+
+        working_dir: /InterviewBot
+
+        ports:
+          -  "3000:3000"
+        
+
+        
+
